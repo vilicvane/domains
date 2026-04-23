@@ -1,0 +1,4 @@
+.wrangler/
+**/.wrangler/
+*_output.json
+*_list.json
