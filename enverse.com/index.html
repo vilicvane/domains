@@ -6,6 +6,8 @@
     <meta name="color-scheme" content="dark" />
     <title>Enverse · 熵减宇宙</title>
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Play:wght@400;700&display=swap');
+
       :root {
         --bg-void: #02030a;
         --bg-deep: #060816;
@@ -357,6 +359,9 @@
         const motionQuery = window.matchMedia(
           '(prefers-reduced-motion: reduce)',
         );
+        const logoFontFamily =
+          "'Play', 'Avenir Next', 'Helvetica Neue', 'Trebuchet MS', sans-serif";
+        const logoFontWeight = 700;
         const pointer = {
           x: 0,
           y: 0,
@@ -457,8 +462,6 @@
             }));
           }
 
-          const fontFamily =
-            "'Avenir Next', 'Helvetica Neue', 'Trebuchet MS', sans-serif";
           let fontSize = Math.min(width * 0.22, height * 0.32, 240);
           const maxWidth = width * 0.78;
 
@@ -466,7 +469,7 @@
           offscreenContext.textBaseline = 'middle';
 
           do {
-            offscreenContext.font = `600 ${fontSize}px ${fontFamily}`;
+            offscreenContext.font = `${logoFontWeight} ${fontSize}px ${logoFontFamily}`;
             fontSize *= 0.96;
           } while (
             offscreenContext.measureText('Enverse').width > maxWidth &&
@@ -701,6 +704,23 @@
           ctx.clearRect(0, 0, width, height);
 
           buildScene();
+        }
+
+        function refreshSceneWhenLogoFontLoads() {
+          if (!document.fonts?.load) {
+            return;
+          }
+
+          document.fonts
+            .load(`700 120px Play`)
+            .then(() => {
+              if (!width || !height) {
+                return;
+              }
+
+              buildScene();
+            })
+            .catch(() => {});
         }
 
         function getOrbitState(particle, time, motionScale = 1) {
@@ -1312,6 +1332,7 @@
         });
 
         resize();
+        refreshSceneWhenLogoFontLoads();
         ctx.fillStyle = '#02030a';
         ctx.fillRect(0, 0, width, height);
         animationId = window.requestAnimationFrame(frame);
