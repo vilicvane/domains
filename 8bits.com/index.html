@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="8bits.com · The Pixelverse" />
+    <title>8bits.com</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+      :root {
+        --bg-void: #06080c;
+        --bg-deep: #0a0c12;
+        --phosphor-a: rgba(248, 224, 168, 0.96);
+        --phosphor-b: rgba(232, 196, 136, 0.92);
+        --phosphor-c: rgba(204, 160, 104, 0.84);
+        --copper-a: rgba(235, 178, 148, 0.9);
+        --copper-b: rgba(212, 148, 118, 0.82);
+        --teal-a: rgba(144, 204, 194, 0.85);
+        --teal-b: rgba(112, 175, 164, 0.76);
+        --ink-primary: rgba(244, 232, 210, 0.92);
+        --ink-secondary: rgba(188, 172, 152, 0.66);
+        --ink-fallback: rgba(242, 228, 204, 0.88);
+        --glow-amber: rgba(255, 200, 120, 0.08);
+        --glow-teal: rgba(130, 200, 185, 0.06);
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg-void);
+        font-family: 'Press Start 2P', 'Courier New', monospace;
+        color: var(--ink-primary);
+        -webkit-font-smoothing: none;
+        -moz-osx-font-smoothing: unset;
+      }
+
+      body::before {
+        content: '';
+        position: fixed;
+        inset: -50%;
+        pointer-events: none;
+        z-index: 0;
+        background:
+          radial-gradient(ellipse 42% 52% at 32% 38%, var(--glow-amber) 0%, transparent 100%),
+          radial-gradient(ellipse 36% 44% at 68% 56%, var(--glow-teal) 0%, transparent 100%);
+      }
+
+      .scene {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #screen {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        image-rendering: pixelated;
+      }
+
+      .crt {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 10;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 3px,
+          rgba(0, 0, 0, 0.045) 3px,
+          rgba(0, 0, 0, 0.045) 6px
+        );
+      }
+
+      .crt::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          ellipse at center,
+          transparent 58%,
+          rgba(6, 8, 12, 0.7) 100%
+        );
+        animation: crtFlicker 0.15s infinite alternate;
+      }
+
+      @keyframes crtFlicker {
+        0% {
+          opacity: 0.975;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      /* ---------- attribution ---------- */
+
+      .attribution {
+        position: fixed;
+        bottom: clamp(2rem, 8vh, 6rem);
+        left: 50%;
+        transform: translate(-50%, 1.4rem) scale(0.97);
+        text-align: center;
+        z-index: 20;
+        opacity: 0;
+        filter: blur(10px);
+        transition: opacity 2s ease-out, filter 2s ease-out, transform 2s ease-out;
+      }
+
+      body.is-gathered .attribution {
+        opacity: 1;
+        filter: blur(0);
+        transform: translate(-50%, 0) scale(1);
+      }
+
+      .attribution-subtitle {
+        display: block;
+        font-size: clamp(0.45rem, 1.1vw, 0.65rem);
+        color: var(--ink-secondary);
+        letter-spacing: 0.2em;
+      }
+
+      .attribution-contact {
+        display: block;
+        font-size: clamp(0.32rem, 0.8vw, 0.48rem);
+        color: rgba(160, 140, 115, 0.62);
+        margin-top: 0.85rem;
+        letter-spacing: 0.14em;
+        text-decoration: none;
+        transition: color 0.4s ease;
+      }
+
+      .attribution-contact:hover {
+        color: var(--phosphor-b);
+      }
+
+      @media (max-width: 720px) {
+        .attribution-subtitle {
+          font-size: clamp(0.35rem, 2.2vw, 0.55rem);
+          letter-spacing: 0.14em;
+        }
+        .attribution-contact {
+          font-size: clamp(0.26rem, 1.6vw, 0.4rem);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .crt::after {
+          animation: none;
+        }
+        .attribution {
+          transition: opacity 0.6s ease-out, filter 0.6s ease-out, transform 0.6s ease-out;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="scene">
+      <canvas id="screen" aria-hidden="true"></canvas>
+      <div class="crt" aria-hidden="true"></div>
+      <aside class="attribution" aria-label="8bits.com attribution">
+        <span class="attribution-line attribution-subtitle"
+          >The Pixelverse</span
+        >
+        <a
+          class="attribution-line attribution-contact"
+          href="mailto:vilicvane+domain@live.com"
+          >vilicvane+domain@live.com</a
+        >
+      </aside>
+    </main>
+
+    <script>
+      (() => {
+        const canvas = document.getElementById('screen');
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          return;
+        }
+
+        const TAU = Math.PI * 2;
+        const motionQuery = window.matchMedia(
+          '(prefers-reduced-motion: reduce)',
+        );
+
+        const PALETTE = [
+          '#f0d490',
+          '#e8c080',
+          '#e8bf98',
+          '#d4b078',
+          '#c8a870',
+          '#e0c8a4',
+          '#f4e0b4',
+          '#c8b090',
+          '#dcc088',
+          '#ecd8a8',
+        ];
+
+        let width = 0;
+        let height = 0;
+        let dpr = 1;
+        let centerX = 0;
+        let centerY = 0;
+        let blocks = [];
+        let dustParticles = [];
+        let animationId = 0;
+        let sceneStart = 0;
+        let gathered = false;
+        let scatterRadius = 0;
+        let reducedMotion = motionQuery.matches;
+
+        const pointer = {
+          x: 0,
+          y: 0,
+          active: false,
+          targetX: 0,
+          targetY: 0,
+        };
+
+        const random = (min, max) => min + Math.random() * (max - min);
+        const clamp = (value, min, max) =>
+          Math.min(max, Math.max(min, value));
+        const interpolate = (a, b, t) => a + (b - a) * t;
+        const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+        function easeOutCubic(t) {
+          return 1 - Math.pow(1 - t, 3);
+        }
+
+        function shuffle(arr) {
+          const a = arr.slice();
+          for (let i = a.length - 1; i > 0; i -= 1) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+          }
+          return a;
+        }
+
+        function sampleBlocks() {
+          const sampleStep = 14;
+          const fontSize = 180;
+          const offCanvas = document.createElement('canvas');
+          offCanvas.width = 2600;
+          offCanvas.height = fontSize * 1.6;
+          const octx = offCanvas.getContext('2d');
+
+          octx.fillStyle = '#ffffff';
+          octx.font = `bold ${fontSize}px "Press Start 2P", "Courier New", monospace`;
+          octx.textAlign = 'center';
+          octx.textBaseline = 'middle';
+          octx.fillText(
+            '8bits.com',
+            offCanvas.width / 2,
+            offCanvas.height / 2,
+          );
+
+          const imageData = octx.getImageData(
+            0,
+            0,
+            offCanvas.width,
+            offCanvas.height,
+          );
+          const pixels = imageData.data;
+
+          const newBlocks = [];
+
+          for (let y = 0; y < offCanvas.height; y += sampleStep) {
+            for (let x = 0; x < offCanvas.width; x += sampleStep) {
+              const pi = (y * offCanvas.width + x) * 4;
+              if (pixels[pi + 3] > 80) {
+                const scaleX = width / offCanvas.width;
+                const scaleY = height / offCanvas.height;
+                const scale = Math.min(scaleX, scaleY) * 0.85;
+
+                const tx =
+                  centerX +
+                  (x - offCanvas.width / 2) * scale;
+                const ty =
+                  centerY +
+                  (y - offCanvas.height / 2) * scale;
+                const charIndex = clamp(
+                  Math.floor(
+                    (x / offCanvas.width) * 9,
+                  ),
+                  0,
+                  8,
+                );
+
+                newBlocks.push({
+                  tx,
+                  ty,
+                  ox: 0,
+                  oy: 0,
+                  x: 0,
+                  y: 0,
+                  color:
+                    PALETTE[
+                      charIndex % PALETTE.length
+                    ],
+                  size:
+                    sampleStep *
+                    scale *
+                    random(0.55, 0.95),
+                  delay: random(
+                    0,
+                    charIndex * 12 + 25,
+                  ),
+                });
+              }
+            }
+          }
+
+          return shuffle(newBlocks);
+        }
+
+        function scatterBlocks(list) {
+          const maxR =
+            scatterRadius * (reducedMotion ? 0.5 : 1);
+          list.forEach((b) => {
+            const angle = random(0, TAU);
+            const radius = random(maxR * 0.1, maxR);
+            b.ox = centerX + Math.cos(angle) * radius;
+            b.oy = centerY + Math.sin(angle) * radius;
+            b.x = b.ox;
+            b.y = b.oy;
+          });
+        }
+
+        function createDust() {
+          const count = reducedMotion ? 80 : 220;
+          dustParticles = [];
+          for (let i = 0; i < count; i += 1) {
+            dustParticles.push({
+              x: random(0, width),
+              y: random(0, height),
+              vx: random(-0.15, 0.15),
+              vy: random(-0.15, 0.15),
+              size: random(1, 3),
+              alpha: random(0.06, 0.22),
+              twinkleSpeed: random(0.005, 0.03),
+              twinkleOffset: random(0, TAU),
+            });
+          }
+        }
+
+        function resize() {
+          dpr = window.devicePixelRatio || 1;
+          width = window.innerWidth;
+          height = window.innerHeight;
+
+          canvas.width = width * dpr;
+          canvas.height = height * dpr;
+          canvas.style.width = width + 'px';
+          canvas.style.height = height + 'px';
+
+          centerX = width / 2;
+          centerY = height / 2;
+          scatterRadius = Math.min(width, height) * 0.52;
+
+          blocks = sampleBlocks();
+          scatterBlocks(blocks);
+          createDust();
+        }
+
+        function drawGrid() {
+          const step = 48;
+          ctx.strokeStyle = 'rgba(52, 44, 36, 0.12)';
+          ctx.lineWidth = 0.5;
+
+          for (let x = step; x < width; x += step) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, height);
+            ctx.stroke();
+          }
+
+          for (let y = step; y < height; y += step) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+          }
+        }
+
+        function updateDust(now) {
+          dustParticles.forEach((d) => {
+            d.x += d.vx;
+            d.y += d.vy;
+
+            if (d.x < -10) d.x = width + 10;
+            if (d.x > width + 10) d.x = -10;
+            if (d.y < -10) d.y = height + 10;
+            if (d.y > height + 10) d.y = -10;
+
+            d.alpha =
+              0.06 +
+              Math.sin(
+                now * d.twinkleSpeed +
+                  d.twinkleOffset,
+              ) *
+                0.1 +
+              0.08;
+          });
+        }
+
+        function drawDust() {
+          dustParticles.forEach((d) => {
+            ctx.fillStyle = `rgba(180,155,125,${clamp(d.alpha, 0, 1).toFixed(3)})`;
+            ctx.fillRect(
+              Math.round(d.x),
+              Math.round(d.y),
+              d.size,
+              d.size,
+            );
+          });
+        }
+
+        function animate(now) {
+          if (!sceneStart) {
+            sceneStart = now;
+          }
+
+          const elapsed =
+            (now - sceneStart) / 1000;
+          const gatherDelay = reducedMotion
+            ? 0.8
+            : 1.5;
+          const gatherDuration = reducedMotion
+            ? 1.8
+            : 3.5;
+          const gatherProgress = clamp(
+            (elapsed - gatherDelay) / gatherDuration,
+            0,
+            1,
+          );
+
+          ctx.save();
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          ctx.fillStyle = '#06080c';
+          ctx.fillRect(0, 0, width, height);
+
+          drawGrid();
+
+          updateDust(now);
+          drawDust();
+
+          updatePointer();
+
+          const globalEased = easeOutCubic(
+            gatherProgress,
+          );
+
+          blocks.forEach((b) => {
+            const blockDelay =
+              (b.delay * 16) / 1000;
+            const blockStart =
+              gatherDelay + blockDelay;
+            const blockDuration = Math.max(
+              0.3,
+              gatherDuration - blockDelay,
+            );
+            const blockProgress = clamp(
+              (elapsed - blockStart) /
+                blockDuration,
+              0,
+              1,
+            );
+            const eased = easeOutCubic(
+              blockProgress,
+            );
+
+            b.x = interpolate(
+              b.ox,
+              b.tx,
+              eased,
+            );
+            b.y = interpolate(
+              b.oy,
+              b.ty,
+              eased,
+            );
+
+            if (!reducedMotion) {
+              if (blockProgress <= 0) {
+                const driftX =
+                  Math.sin(
+                    now * 0.0008 +
+                      b.ox * 0.013 +
+                      b.oy * 0.009,
+                  ) * 1.2;
+                const driftY =
+                  Math.cos(
+                    now * 0.0011 +
+                      b.oy * 0.012 +
+                      b.ox * 0.01,
+                  ) * 1.0;
+                b.x += driftX;
+                b.y += driftY;
+              } else {
+                const waveFade = clamp(
+                  (blockProgress - 0.5) / 0.5,
+                  0,
+                  1,
+                );
+                const waveX =
+                  Math.sin(
+                    now * 0.0025 +
+                      b.ty * 0.015 +
+                      b.tx * 0.008,
+                  ) *
+                  2.2 *
+                  waveFade;
+                const waveY =
+                  Math.cos(
+                    now * 0.003 +
+                      b.tx * 0.012 +
+                      b.ty * 0.018,
+                  ) *
+                  1.5 *
+                  waveFade;
+                b.x += waveX;
+                b.y += waveY;
+              }
+            }
+
+            if (
+              pointer.active &&
+              gatherProgress > 0.4
+            ) {
+              const dx = b.x - pointer.x;
+              const dy = b.y - pointer.y;
+              const dist = Math.sqrt(
+                dx * dx + dy * dy,
+              );
+              const influenceRadius =
+                scatterRadius * 0.3;
+              if (
+                dist < influenceRadius &&
+                dist > 0
+              ) {
+                const force =
+                  (1 -
+                    dist /
+                      influenceRadius) *
+                  2.2;
+                b.x +=
+                  (dx / dist) * force;
+                b.y +=
+                  (dy / dist) * force;
+              }
+            }
+          });
+
+          blocks.forEach((b) => {
+            const ratio =
+              b.size /
+              (scatterRadius > 0
+                ? scatterRadius * 0.004
+                : 1);
+            const clampedSize = clamp(
+              ratio,
+              2,
+              b.size,
+            );
+            ctx.fillStyle = b.color;
+            ctx.shadowColor = 'rgba(240,200,140,0.35)';
+            ctx.shadowBlur =
+              clampedSize * 1.4;
+            ctx.fillRect(
+              Math.round(
+                b.x - clampedSize / 2,
+              ),
+              Math.round(
+                b.y - clampedSize / 2,
+              ),
+              Math.round(clampedSize),
+              Math.round(clampedSize),
+            );
+          });
+
+          ctx.shadowBlur = 0;
+          ctx.restore();
+
+          if (
+            !gathered &&
+            gatherProgress >= 1
+          ) {
+            gathered = true;
+            document.body.classList.add(
+              'is-gathered',
+            );
+          }
+
+          animationId = requestAnimationFrame(
+            animate,
+          );
+        }
+
+        function updatePointer() {
+          if (!pointer.active) return;
+          const smoothing = 0.06;
+          pointer.x +=
+            (pointer.targetX - pointer.x) *
+            smoothing;
+          pointer.y +=
+            (pointer.targetY - pointer.y) *
+            smoothing;
+        }
+
+        function onPointerMove(e) {
+          const clientX =
+            e.touches && e.touches.length > 0
+              ? e.touches[0].clientX
+              : e.clientX;
+          const clientY =
+            e.touches && e.touches.length > 0
+              ? e.touches[0].clientY
+              : e.clientY;
+
+          pointer.targetX = clientX;
+          pointer.targetY = clientY;
+
+          if (!pointer.active) {
+            pointer.x = clientX;
+            pointer.y = clientY;
+            pointer.active = true;
+          }
+        }
+
+        function onPointerLeave() {
+          pointer.active = false;
+        }
+
+        function onVisibilityChange() {
+          if (document.hidden) {
+            if (animationId) {
+              cancelAnimationFrame(
+                animationId,
+              );
+              animationId = 0;
+            }
+          } else if (!animationId) {
+            animationId = requestAnimationFrame(
+              animate,
+            );
+          }
+        }
+
+        function onMotionChange(e) {
+          reducedMotion = e.matches;
+          scatterRadius =
+            Math.min(width, height) * 0.52;
+          scatterBlocks(blocks);
+          createDust();
+        }
+
+        function init() {
+          resize();
+
+          window.addEventListener(
+            'resize',
+            () => {
+              resize();
+            },
+          );
+
+          if (document.fonts) {
+            document.fonts.ready.then(() => {
+              if (!gathered) {
+                const oldBlocks = blocks;
+                blocks = sampleBlocks();
+                const maxR =
+                  scatterRadius *
+                  (reducedMotion ? 0.5 : 1);
+                blocks.forEach((b, i) => {
+                  if (i < oldBlocks.length) {
+                    b.ox = oldBlocks[i].ox;
+                    b.oy = oldBlocks[i].oy;
+                    b.x = oldBlocks[i].x;
+                    b.y = oldBlocks[i].y;
+                  } else {
+                    const angle = random(
+                      0,
+                      TAU,
+                    );
+                    const radius = random(
+                      maxR * 0.1,
+                      maxR,
+                    );
+                    b.ox =
+                      centerX +
+                      Math.cos(angle) * radius;
+                    b.oy =
+                      centerY +
+                      Math.sin(angle) * radius;
+                    b.x = b.ox;
+                    b.y = b.oy;
+                  }
+                });
+              }
+            });
+          }
+
+          window.addEventListener(
+            'pointermove',
+            onPointerMove,
+            { passive: true },
+          );
+          window.addEventListener(
+            'pointerleave',
+            onPointerLeave,
+          );
+          window.addEventListener(
+            'touchmove',
+            onPointerMove,
+            { passive: true },
+          );
+          document.addEventListener(
+            'visibilitychange',
+            onVisibilityChange,
+          );
+          motionQuery.addEventListener(
+            'change',
+            onMotionChange,
+          );
+
+          animationId = requestAnimationFrame(
+            animate,
+          );
+        }
+
+        init();
+      })();
+    </script>
+  </body>
+</html>

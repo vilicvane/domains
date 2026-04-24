@@ -20,13 +20,13 @@ This repository currently contains a single static site in `enverse.com/`.
 2. Log in to Wrangler if needed:
 
    ```bash
-   npx -y wrangler@4.84.1 login
+   npx -y wrangler login
    ```
 
 3. Deploy the current static files to Cloudflare Pages:
 
    ```bash
-   npx -y wrangler@4.84.1 pages deploy . --project-name enverse-com --branch main
+   npx -y wrangler pages deploy . --project-name enverse-com --branch main
    ```
 
 4. Verify the deployment:
